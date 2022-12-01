@@ -4,7 +4,6 @@ fileSize:   dw      10408           ;input file size
 
 section     .bss
 fileCont:   resb 10408           ;Reserved bytes for file
-max:        resb 32              ;Reserved bytes for max
 
 ; ---------------------------------
 ; Code Section
@@ -32,7 +31,7 @@ openFile:
     xor     eax, eax            ;Clear out regs we need
     xor     esi, esi            ;clear esi
     xor     edi, edi            ;clear edi
-    mov     [max], eax          ;clear out max
+    xor     edx, edx
 
 parseFile:
 .buildInt:
@@ -43,7 +42,6 @@ parseFile:
 
 .endLineCheck:
     inc     ecx                 ;iterate forward one char
-    inc     edx                 ;linePtr += 1
     cmp     [ecx], byte 0h      ;if null
     jz      quit                ;quit
     cmp     [ecx], byte 0Ah     ;if 0 (newLine) is not the character
@@ -68,9 +66,9 @@ parseFile:
     jne     .stackPopLoop       ;if not, iterate
 
     xor     rax, rax            ;clear eax
-    cmp     edi, [max]          ;comp edi and max
+    cmp     edi, edx          ;comp edi and max
     jle     .findNextNum        ;jump if less than max
-    mov     [max], edi          ;set max to edi
+    mov     edx, edi          ;set max to edi
 
 .findNextNum:
     inc     ecx                 ;move ecx forwards
@@ -84,7 +82,7 @@ parseFile:
 ;--------------------------------
 ;Exits gracefully
 quit:
-    mov     eax, [max]
+    mov     eax, edx
     mov     rbx, 0              ;Sys_call to end program
     mov     rax, 1
     int     80h
