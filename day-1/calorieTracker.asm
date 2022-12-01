@@ -1,67 +1,34 @@
+;; Assemble and link with nasm and gcc
+;; gcc is required for extern printf
+
+
 section     .data
     ;; File vars
 filename:   db      'input.txt', 0h ;input file
 fileSize:   dw      10408
 
     ;; Integer vars
-max:        db      0           ;max calories
-currentSum: db      0           ;current sum of calories
-
+msg:        db      "test"
     ;; String vars
-lineSize:   db      0           ;size of line
-filePtr:    db      0           ;pointer for file
-linePtr:    db      0           ;pointer of current line
 
 section     .bss
-lineCont:   resb 10            ;Reserved bytes for lines
-fileCont:   resb 10408          ;Reserved bytes for file
+fileCont:   resb 10408           ;Reserved bytes for file
+max:        resb 32
 
 ; ---------------------------------
 ;
 ; Code Section
 section     .text
 global      _start
+extern      printf
 _start:
-    call    openFile            ;Get file contents into reserved memory
-    mov     ecx, fileCont       ;put pointer for fileCont into ecx
-    xor     eax, eax                ;inbetween iterations
-
-getLength:
-    jmp    .buildInt
-
-.endLineCheck:
-    add     ecx, 1              ;iterate forward one char
-    mov     edx, [linePtr]      ;VV
-    add     edx, 1              ;linePtr += 1
-    mov     [linePtr], edx      ;^^
-    cmp     [ecx], byte 0Ah     ;if 0 (newLine) is the character
-    jnz     getLength           ;jump to getLength
-
-    mov     [filePtr], ecx      ;set ptr to end of current line
-
-
-.buildInt:
-    mov     bl, byte [ecx]     ;put current byte into bl
-    sub     bl, '0'            ;convert ASCII to int
-    imul    eax, 10
-    add     eax, ebx
-    jmp .endLineCheck
-;--------------------------------
-;Exits gracefully
-quit:
-    mov     rbx, 0              ;Sys_call to end program
-    mov     rax, 1
-    int     80h
-
-
-
 ;-------------------------
 ; Str openFile(String fileName)
 ; Puts file contents into reserved memory
 ; (Get byte size from wc -c)
 openFile:
-    mov     ecx, 2              ;Readonly access mode
-    mov     ebx, filename       ;filename for open
+    mov     ecx, 2              ;Read Write access mode
+    mov     ebx, filename       ;filename to open
     mov     eax, 5              ;Kernel opcode 5 -> SYS_OPEN
     int     80h                 ;Kernel call
 
@@ -71,5 +38,65 @@ openFile:
     mov     eax, 3              ;Kernel opcode 3 -> SYS_READ
     int     80h                 ;Kernel call
 
-    mov     eax, fileCont
-    ret
+    ;; Set up for getLength
+    mov     ecx, fileCont       ;put pointer for fileCont into ecx
+    xor     eax, eax            ;Clear out regs we need
+    xor     esi, esi            ;clear esi
+    xor     edi, edi            ;clear edi
+    mov     [max], eax          ;clear out max
+
+getLength:
+.buildInt:
+    mov     bl, byte [ecx]      ;put current byte into bl
+    sub     bl, '0'             ;convert ASCII to int
+    imul    eax, 10             ;shift left (but in decimal)
+    add     eax, ebx            ;add the new int to the end
+    jmp     .endLineCheck       ;jump to endLineCheck
+
+.endLineCheck:
+    inc     ecx                 ;iterate forward one char
+    inc     edx                 ;linePtr += 1
+    cmp     [ecx], byte 0h      ;if null
+    jz      quit                ;quit
+    cmp     [ecx], byte 0Ah     ;if 0 (newLine) is not the character
+    jnz     getLength           ;Iterate more
+    ;; ---------------------
+    ;; If it is end of line
+    ;; ---------------------
+    push    rax                 ;push first number to stack
+    xor     rax, rax            ;clear rax
+    inc     esi                 ;counting how many nums we have
+    inc     ecx                 ;Move ecx to point to next line
+
+.newLineCheck:
+    cmp     [ecx], byte 0Ah     ;are there two new lines in a row?
+    jnz     getLength           ;Iterate more if not blank
+
+.stackPopLoop:                  ;Here is where we add them up
+    pop     rax                 ;pop from stack into rax
+    add     edi, eax            ;add popped int to sum
+    dec     esi                 ;Decrement esi
+    cmp     esi, 0              ;Check if esi is 0
+    jne     .stackPopLoop       ;if not, iterate
+
+    xor     rax, rax            ;clear eax
+    cmp     edi, [max]          ;comp edi and max
+    jle     .findNextNum        ;jump if less than max
+    mov     [max], edi          ;set max to edi
+
+.findNextNum:
+    inc     ecx                 ;move ecx forwards
+    cmp     [ecx], byte 0Ah     ;if ecx points to \n
+    jz      .findNextNum        ;if yes, iterate
+    xor     edi, edi            ;clear edi
+    jmp     getLength           ;if no, go back to getLength
+
+
+
+;--------------------------------
+;Exits gracefully
+quit:
+    mov     eax, [max]
+    mov     rbx, 0              ;Sys_call to end program
+    mov     rax, 1
+    int     80h
