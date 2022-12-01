@@ -27,14 +27,14 @@ openFile:
     mov     eax, 3              ;Kernel opcode 3 -> SYS_READ
     int     80h                 ;Kernel call
 
-    ;; Set up for getLength
+    ;; Set up for parseFile
     mov     ecx, fileCont       ;put pointer for fileCont into ecx
     xor     eax, eax            ;Clear out regs we need
     xor     esi, esi            ;clear esi
     xor     edi, edi            ;clear edi
     mov     [max], eax          ;clear out max
 
-getLength:
+parseFile:
 .buildInt:
     mov     bl, byte [ecx]      ;put current byte into bl
     sub     bl, '0'             ;convert ASCII to int
@@ -48,7 +48,7 @@ getLength:
     cmp     [ecx], byte 0h      ;if null
     jz      quit                ;quit
     cmp     [ecx], byte 0Ah     ;if 0 (newLine) is not the character
-    jnz     getLength           ;Iterate more
+    jnz     parseFile           ;Iterate more
     ;; ---------------------
     ;; If it is end of line
     ;; ---------------------
@@ -59,7 +59,7 @@ getLength:
 
 .newLineCheck:
     cmp     [ecx], byte 0Ah     ;are there two new lines in a row?
-    jnz     getLength           ;Iterate more if not blank
+    jnz     parseFile           ;Iterate more if not blank
 
 .stackPopLoop:                  ;Here is where we add them up
     pop     rax                 ;pop from stack into rax
@@ -78,7 +78,7 @@ getLength:
     cmp     [ecx], byte 0Ah     ;if ecx points to \n
     jz      .findNextNum        ;if yes, iterate
     xor     edi, edi            ;clear edi
-    jmp     getLength           ;if no, go back to getLength
+    jmp     parseFile           ;if no, go back to getLength
 
 
 
