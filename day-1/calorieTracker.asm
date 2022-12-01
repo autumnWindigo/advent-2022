@@ -1,26 +1,15 @@
-;; Assemble and link with nasm and gcc
-;; gcc is required for extern printf
-
-
 section     .data
-    ;; File vars
 filename:   db      'input.txt', 0h ;input file
-fileSize:   dw      10408
-
-    ;; Integer vars
-msg:        db      "test"
-    ;; String vars
+fileSize:   dw      10408           ;input file size
 
 section     .bss
 fileCont:   resb 10408           ;Reserved bytes for file
-max:        resb 32
+max:        resb 32              ;Reserved bytes for max
 
 ; ---------------------------------
-;
 ; Code Section
 section     .text
 global      _start
-extern      printf
 _start:
 ;-------------------------
 ; Str openFile(String fileName)
