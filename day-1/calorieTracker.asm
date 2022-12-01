@@ -40,7 +40,6 @@ parseFile:
     sub     bl, '0'             ;convert ASCII to int
     imul    eax, 10             ;shift left (but in decimal)
     add     eax, ebx            ;add the new int to the end
-    jmp     .endLineCheck       ;jump to endLineCheck
 
 .endLineCheck:
     inc     ecx                 ;iterate forward one char
