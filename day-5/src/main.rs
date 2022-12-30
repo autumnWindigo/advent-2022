@@ -32,17 +32,15 @@ fn main() {
     /*
      * Iterate through file and move boxes
      */
-    while let Some(lines) = reader.next() {
+    for lines in reader {
         match lines {
-            Err(e) => panic!("Error reading line: {}", e.to_string()),
+            Err(e) => panic!("Error reading line: {}", e),
             Ok(lines) => {
                 let cap = re.captures(&lines).unwrap();
                 for _ in 0..cap[1].parse::<usize>().unwrap(){
-                    match cargo[cap[2].parse::<usize>().unwrap()-1].pop_back() {
-                        Some(x) => {cargo[cap[3].parse::<usize>().unwrap()-1].push_back(x);
-                        },
-                            None => ()
-                        };
+                    if let Some(x) = cargo[cap[2].parse::<usize>().unwrap()-1].pop_back() {
+                        cargo[cap[3].parse::<usize>().unwrap()-1].push_back(x);
+                    }
                 }
             }
         }
@@ -59,7 +57,7 @@ fn main() {
 fn get_file(path: &str) -> BufReader<File> {
     let data_path = Path::new(path);
     let file = match File::open(data_path) {
-        Err(e) => panic!("Coultn't open {}: {}", data_path.display(), e.to_string()),
+        Err(e) => panic!("Coultn't open {}: {}", data_path.display(), e),
         Ok(file) => file,
     };
     BufReader::new(file)
